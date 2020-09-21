@@ -1,0 +1,6 @@
+# Enables the xfce session for all users
+export LOGNAME=$USER
+export LIBGL_ALWAYS_INDIRECT=1
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+xfce4-session

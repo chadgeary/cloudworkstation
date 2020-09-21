@@ -1,0 +1,206 @@
+---
+- name: workstation.yml
+  hosts: localhost
+  become: True
+  become_user: root
+  tasks:
+
+    - name: xrdp, gnome, and guacamole/docker packages
+      apt:
+        pkg:
+          - docker.io
+          - python-pip
+          - xfce4
+          - xfce4-terminal
+          - xrdp
+        state: latest
+        update_cache: yes
+      retries: 6
+      delay: 20
+      register: packages_install
+      until: packages_install is not failed
+
+    - name: install docker python package for ansible
+      pip:
+        executable: /usr/bin/pip
+        name: docker
+
+    - name: add xrdp user to ssl-cert group
+      user:
+        name: xrdp
+        groups: ssl-cert
+        append: yes
+
+    - name: set xrdp listen local only
+      lineinfile:
+        path: /etc/xrdp/xrdp.ini
+        insertbefore: '^; tcp port to listen'
+        line: address=127.0.0.1
+      register: xrdp_ini
+
+    - name: disable permit root rdp
+      lineinfile:
+        path: /etc/xrdp/sesman.ini
+        regexp: '^AllowRootLogin='
+        line: 'AllowRootLogin=False'
+      register: sesman_ini
+
+    - name: enable / start docker, gdm
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - docker
+        - gdm
+        - xrdp
+
+    - name: global xsession configuration file
+      copy:
+        src: xsession
+        dest: /opt/xsession
+        owner: xrdp
+        group: xrdp
+        mode: '0555'
+
+    - name: restart xrdp if inis changed
+      systemd:
+        name: xrdp
+        state: restarted
+      when: xrdp_ini.changed or sesman_ini.changed
+
+    - name: Guacamole data dir
+      file:
+        path: /opt/guacamole
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+
+    - name: Determine db passwords set (root)
+      stat:
+        path: /opt/guacamole/guacdb_root_file
+      register: guacdb_root_file
+
+    - name: Determine db passwords set (guacamole)
+      stat:
+        path: /opt/guacamole/guacdb_guacamole_file
+      register: guacdb_guacamole_file
+
+    - name: Create db passwords when not set (root)
+      shell: |
+        head /dev/urandom | tr -dc A-Za-z0-9 | head -c 20 > /opt/guacamole/guacdb_root_file
+      when: guacdb_root_file.stat.exists|bool == False
+
+    - name: Create db passwords when not set (guacamole)
+      shell: |
+        head /dev/urandom | tr -dc A-Za-z0-9 | head -c 20 > /opt/guacamole/guacdb_guacamole_file
+      when: guacdb_guacamole_file.stat.exists|bool == False
+
+    - name: Register db passwords
+      shell: |
+        cat /opt/guacamole/guacdb_root_file
+      register: guacdb_root_pass
+
+    - name: Register db pass (guacamole)
+      shell: |
+        cat /opt/guacamole/guacdb_guacamole_file
+      register: guacdb_guacamole_pass
+
+    - name: Docker Volume (db)
+      docker_volume:
+        name: guacdb
+
+    - name: Docker Network
+      docker_network:
+        name: guacnet
+        ipam_config:
+          - subnet: "{{ guacnet_cidr }}"
+
+    - name: Docker Container - guacd
+      docker_container:
+        name: guacd
+        image: guacamole/guacd
+        networks:
+          - name: guacnet
+            ipv4_address: "{{ guacnet_guacd }}"
+
+    - name: Docker Container - guacdb
+      docker_container:
+        name: guacdb
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ guacdb_root_pass.stdout }}"
+        image: mysql/mysql-server
+        networks:
+          - name: guacnet
+            ipv4_address: "{{ guacnet_guacdb }}"
+        purge_networks: yes
+        volumes:
+          - guacdb:/var/lib/mysql
+
+    - name: Docker Container - guacamole
+      docker_container:
+        name: guacamole
+        env:
+          MYSQL_HOSTNAME: "{{ guacnet_guacdb }}"
+          MYSQL_PORT: "3306"
+          MYSQL_DATABASE: "guacamole_db"
+          MYSQL_USER: "guacamole_user"
+          MYSQL_PASSWORD: "{{ guacdb_guacamole_pass.stdout }}"
+          GUACD_HOSTNAME: "{{ guacnet_guacd }}"
+          GUACD_PORT: "4822"
+          GUACD_LOG_LEVEL: "debug"
+        image: guacamole/guacamole
+        links:
+          - "guacd:guacd"
+          - "guacdb:mysql"
+        networks:
+          - name: guacnet
+            ipv4_address: "{{ guacnet_guacamole }}"
+        ports:
+          - "8080:8080"
+        purge_networks: yes
+
+    - name: Determine if (One Time) was done
+      stat:
+        path: /opt/guacamole/one_time_done
+      register: guacdb_one_time_done
+
+    - name: Set my.cnf and dbpass.sql
+      template:
+        src: "{{ item }}"
+        dest: "/opt/guacamole/{{ item }}"
+        owner: root
+        group: root
+        mode: '0400'
+      with_items:
+        - my.cnf
+        - dbpass.sql
+      when: guacdb_one_time_done.stat.exists|bool == False
+
+    - name: Wait for mysqld on 3306
+      shell: |
+        docker logs guacdb 2>&1 | grep --quiet 'port: 3306'
+      register: wait_for_mysqld
+      until: wait_for_mysqld.rc == 0
+      retries: 15
+      delay: 15
+      when: guacdb_one_time_done.stat.exists|bool == False
+
+    - name: Configure DB (One Time)
+      shell: |
+        # credentials
+        docker cp /opt/guacamole/my.cnf guacdb:/root/.my.cnf
+        docker cp /opt/guacamole/dbpass.sql guacdb:dbpass.sql
+        docker exec -i guacdb /bin/bash -c "mysql < dbpass.sql"
+        touch /opt/guacamole/one_time_done
+        # schema
+        docker exec -i guacamole /bin/bash -c 'cat /opt/guacamole/mysql/schema/*.sql' > /opt/guacamole/dbschema.sql
+        docker cp /opt/guacamole/dbschema.sql guacdb:dbschema.sql
+        docker exec -i guacdb /bin/bash -c "mysql guacamole_db < dbschema.sql"
+      when: guacdb_one_time_done.stat.exists|bool == False
+
+    - name: Set One Time
+      file:
+        path: /opt/guacamole/one_time_done
+        state: touch
