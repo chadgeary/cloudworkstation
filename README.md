@@ -15,8 +15,8 @@ Edit the vars file (.tfvars) to customize the deployment, especially:
 
 **mgmt_cidr**
 
-- an IP range granted NiFi webUI and EC2 SSH access via the ELB hostname.
-- deploying from home? `dig +short myip.opendns.com @resolver1.opendns.com | awk '{ print $1"/32" }'`
+- an IP range granted webUI and EC2 SSH access.
+- deploying from home? This should be your public IP address with a /32 suffix. 
 
 **kms_manager**
 
