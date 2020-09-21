@@ -36,7 +36,7 @@ variable "guacnet_guacamole" {
 
 variable "mgmt_cidr" {
   type                     = string
-  description              = "Subnet CIDR allowed to access NiFi instance(s) via ELB, e.g. 172.16.10.0/30"
+  description              = "Subnet CIDR allowed to access WebUI and SSH, e.g. 172.16.10.0/30"
 }
 
 variable "instance_type" {
