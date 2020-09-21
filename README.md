@@ -1,5 +1,5 @@
 # Reference
-Terraform with Ansible to create/manage a full AWS-based Ubuntu 18.04 Workstation with RDP via Apache Guacamole.
+A browser-based linux desktop workstation in AWS. Built with Apache Guacamole and Ubuntu using Terraform and Ansible.
 
 # Requirements
 - Terraform installed.
@@ -26,11 +26,11 @@ Edit the vars file (.tfvars) to customize the deployment, especially:
 
 **instance_key**
 
-- a public SSH key for SSH access to instances via user `ubuntu`
+- a public SSH key for SSH access to instances via user `ubuntu`.
 
 **instance_vol_size**
 
-- the volume/filesystem size of the zookeeper and node instances, in GiB.
+- the volume/filesystem size of the workstation disk, in GiB.
 
 # Deploy
 ```
