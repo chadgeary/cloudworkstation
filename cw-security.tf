@@ -29,22 +29,22 @@ resource "aws_security_group_rule" "cw-pubsg1-mgmt-https-in" {
   cidr_blocks             = [var.mgmt_cidr]
 }
 
-resource "aws_security_group_rule" "cw-pubsg1-mgmt-http-in" {
-  security_group_id       = aws_security_group.cw-pubsg1.id
-  type                    = "ingress"
-  description             = "IN FROM MGMT - HTTP CUSTOM"
-  from_port               = "8080"
-  to_port                 = "8080"
-  protocol                = "tcp"
-  cidr_blocks             = [var.mgmt_cidr]
-}
-
-resource "aws_security_group_rule" "cw-pubsg1-out" {
+resource "aws_security_group_rule" "cw-pubsg1-out-tcp" {
   security_group_id       = aws_security_group.cw-pubsg1.id
   type                    = "egress"
-  description             = "OUT - WORLD"
+  description             = "OUT TO WORLD - TCP"
   from_port               = 0
   to_port                 = 65535
   protocol                = "tcp"
+  cidr_blocks             = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "cw-pubsg1-out-udp" {
+  security_group_id       = aws_security_group.cw-pubsg1.id
+  type                    = "egress"
+  description             = "OUT TO WORLD - UDP"
+  from_port               = 0
+  to_port                 = 65535
+  protocol                = "udp"
   cidr_blocks             = ["0.0.0.0/0"]
 }

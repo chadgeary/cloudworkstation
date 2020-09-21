@@ -5,14 +5,16 @@
   become_user: root
   tasks:
 
-    - name: xrdp, gnome, and guacamole/docker packages
+    - name: apache2, xrdp, gnome, and guacamole/docker packages
       apt:
         pkg:
+          - apache2
           - docker.io
           - python-pip
           - xfce4
           - xfce4-terminal
           - xrdp
+          - ssl-cert
         state: latest
         update_cache: yes
       retries: 6
@@ -45,6 +47,14 @@
         line: 'AllowRootLogin=False'
       register: sesman_ini
 
+    - name: global xsession configuration file
+      copy:
+        src: xsession
+        dest: /opt/xsession
+        owner: xrdp
+        group: xrdp
+        mode: '0555'
+
     - name: enable / start docker and xrdp
       systemd:
         name: "{{ item }}"
@@ -53,14 +63,6 @@
       with_items:
         - docker
         - xrdp
-
-    - name: global xsession configuration file
-      copy:
-        src: xsession
-        dest: /opt/xsession
-        owner: xrdp
-        group: xrdp
-        mode: '0555'
 
     - name: restart xrdp if inis changed
       systemd:
@@ -203,3 +205,30 @@
       file:
         path: /opt/guacamole/one_time_done
         state: touch
+
+    - name: Enable Apache2 Modules for proxy and ssl
+      apache2_module:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - headers
+        - proxy
+        - proxy_http
+        - ssl
+      register: apache_modules
+
+    - name: Proxy Configuration for Apache
+      template:
+        src: 8080-web-proxy.conf
+        dest: /etc/apache2/sites-enabled/8080-web-proxy.conf
+        owner: root
+        group: root
+        mode: 0444
+      register: proxy_conf
+
+    - name: Apache2 Enabled / Restarted
+      systemd:
+        name: apache2
+        state: restarted
+        enabled: yes
+      when: apache_modules.changed or proxy_conf.changed
