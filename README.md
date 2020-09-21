@@ -40,7 +40,7 @@ terraform init
 # Apply terraform - the first apply takes a while creating an encrypted AMI.
 terraform apply -var-file="cw.tfvars"
 
-# Wait for SSM Ansible Playbook, watch:
+# Wait for SSM to run the Ansible Playbook (workstation/), watch:
 https://console.aws.amazon.com/systems-manager/state-manager
 ```
 
