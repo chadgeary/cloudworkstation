@@ -45,14 +45,13 @@
         line: 'AllowRootLogin=False'
       register: sesman_ini
 
-    - name: enable / start docker, gdm
+    - name: enable / start docker and xrdp
       systemd:
         name: "{{ item }}"
         state: started
         enabled: yes
       with_items:
         - docker
-        - gdm
         - xrdp
 
     - name: global xsession configuration file
