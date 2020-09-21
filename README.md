@@ -63,9 +63,11 @@ https://console.aws.amazon.com/systems-manager/state-manager
 
 # Screenshots
 Configuration:
+
 ![Configuration](sample_configuration.png)
 
 Session:
+
 ![Session](sample_session.png)
 
 # AMI Notes
