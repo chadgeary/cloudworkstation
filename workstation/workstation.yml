@@ -55,11 +55,18 @@
         group: xrdp
         mode: '0555'
 
+    - name: set xrdp sesman systemd unit to wait for docker
+      lineinfile:
+        path: /lib/systemd/system/xrdp-sesman.service
+        regexp: '^After=network.target'
+        line: 'After=network.target docker.service'
+
     - name: enable / start docker and xrdp
       systemd:
         name: "{{ item }}"
         state: started
         enabled: yes
+        daemon_reload: yes
       with_items:
         - docker
         - xrdp
