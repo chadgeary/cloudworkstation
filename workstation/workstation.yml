@@ -125,6 +125,7 @@
         networks:
           - name: guacnet
             ipv4_address: "{{ guacnet_guacd }}"
+        restart_policy: "always"
 
     - name: Docker Container - guacdb
       docker_container:
@@ -136,6 +137,7 @@
           - name: guacnet
             ipv4_address: "{{ guacnet_guacdb }}"
         purge_networks: yes
+        restart_policy: "always"
         volumes:
           - guacdb:/var/lib/mysql
 
@@ -161,6 +163,7 @@
         ports:
           - "8080:8080"
         purge_networks: yes
+        restart_policy: "always"
 
     - name: Determine if (One Time) was done
       stat:
