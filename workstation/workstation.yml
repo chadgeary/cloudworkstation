@@ -33,11 +33,11 @@
         groups: ssl-cert
         append: yes
 
-    - name: set xrdp listen local only
+    - name: set xrdp listen local (docker) only
       lineinfile:
         path: /etc/xrdp/xrdp.ini
         insertbefore: '^; tcp port to listen'
-        line: address=127.0.0.1
+        line: address=172.17.0.1
       register: xrdp_ini
 
     - name: disable permit root rdp
@@ -164,7 +164,7 @@
 
     - name: Determine if (One Time) was done
       stat:
-        path: /opt/guacamole/one_time_done
+        path: /opt/guacamole/db_conf_done
       register: guacdb_one_time_done
 
     - name: Set my.cnf and dbpass.sql
@@ -203,7 +203,7 @@
 
     - name: Set One Time
       file:
-        path: /opt/guacamole/one_time_done
+        path: /opt/guacamole/db_conf_done
         state: touch
 
     - name: Enable Apache2 Modules for proxy and ssl
@@ -232,3 +232,46 @@
         state: restarted
         enabled: yes
       when: apache_modules.changed or proxy_conf.changed
+
+# The following sets the default AMI user (ubuntu)'s password from a random string
+# The password is saved to a Guacamole session
+    - name: Determine User and Session one-time setup complete
+      stat:
+        path: /opt/guacamole/user_session_done
+      register: usersession_one_time_done
+
+    - name: Generate Ubuntu password (One Time)
+      shell: |
+        head /dev/urandom | tr -dc A-Za-z0-9 | head -c 20 > /opt/guacamole/ubuntu_file
+      when: usersession_one_time_done.stat.exists|bool == False
+
+    - name: Register Ubuntu password (One Time)
+      shell: |
+        cat /opt/guacamole/ubuntu_file
+      register: ubuntu_pass
+      when: usersession_one_time_done.stat.exists|bool == False
+
+    - name: Set Ubuntu password (One Time)
+      user:
+        name: ubuntu
+        password: "{{ ubuntu_pass.stdout|password_hash('sha512') }}"
+      when: usersession_one_time_done.stat.exists|bool == False
+
+    - name: Auth and create Session (One Time)
+      shell: |
+        # Auth for token
+        GUAC_TOKEN=$(curl 'http://127.0.0.1:8080/guacamole/api/tokens' -c cookies.tmp -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Origin: http://127.0.0.1:8080' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' -H 'Referer: http://127.0.0.1:8080/guacamole/' -H 'Accept-Language: en-US,en;q=0.9' --data-raw 'username=guacadmin&password=guacadmin' --compressed --insecure --silent | awk -F'"' '{ print $4 }')
+
+        # Add local connection
+        curl "http://127.0.0.1:8080/guacamole/api/session/data/mysql/connections?token=$GUAC_TOKEN" -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:8080' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' -H 'Referer: http://127.0.0.1:8080/guacamole/' -H 'Accept-Language: en-US,en;q=0.9' --data-binary '{"parentIdentifier":"ROOT","name":"cloud_workstation","protocol":"rdp","parameters":{"port":"3389","read-only":"","swap-red-blue":"","cursor":"","color-depth":"","clipboard-encoding":"","disable-copy":"","disable-paste":"","dest-port":"","recording-exclude-output":"","recording-exclude-mouse":"","recording-include-keys":"","create-recording-path":"","enable-sftp":"","sftp-port":"","sftp-server-alive-interval":"","sftp-disable-download":"","sftp-disable-upload":"","enable-audio":"","wol-send-packet":"","wol-wait-time":"","security":"","disable-auth":"","ignore-cert":"true","gateway-port":"","server-layout":"","timezone":null,"console":"","width":"","height":"","dpi":"","resize-method":"","console-audio":"","disable-audio":"","enable-audio-input":"","enable-printing":"","enable-drive":"","disable-download":"","disable-upload":"","create-drive-path":"","enable-wallpaper":"","enable-theming":"","enable-font-smoothing":"","enable-full-window-drag":"","enable-desktop-composition":"","enable-menu-animations":"","disable-bitmap-caching":"","disable-offscreen-caching":"","disable-glyph-caching":"","preconnection-id":"","hostname":"172.17.0.1","username":"ubuntu","password":"{{ubuntu_pass.stdout}}"},"attributes":{"max-connections":"1","max-connections-per-user":"1","weight":"","failover-only":"","guacd-port":"4822","guacd-encryption":"","guacd-hostname":"{{ guacnet_guacd }}"}}' --compressed --insecure
+      when: usersession_one_time_done.stat.exists|bool == False
+
+    - name: Remove Ubuntu password file
+      file:
+        path: /opt/guacamole/ubuntu_file
+        state: absent
+
+    - name: Set User and Session one-time setup complete
+      file:
+        path: /opt/guacamole/user_session_done
+        state: touch

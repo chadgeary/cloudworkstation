@@ -1,6 +1,8 @@
 # Reference
 A browser-based linux desktop workstation in AWS. Built with Apache Guacamole and Ubuntu using Terraform and Ansible.
 
+![Session](sample_session.png)
+
 # Requirements
 - Terraform installed.
 - AWS credentials (e.g. `aws configure` if awscli is installed)
@@ -44,31 +46,11 @@ terraform apply -var-file="cw.tfvars"
 https://console.aws.amazon.com/systems-manager/state-manager
 ```
 
-# Sample Guacamole Configuration
-- Connect via SSH with user `ubuntu` and set a password via `passwd`.
+# Use
 - Browse to https://<instance_public_ip>/guacamole
-- Authenticate with default user:pass guacadmin:guacadmin, **change the password**.
-- Click guacadmin (top right) -> Connections -> New Connection
-  - Name: localhost
-  - Protocol: RDP
-  - Guacamole Proxy Parameters (guacd container)
-    - Hostname: 192.168.11.2
-    - Port: 4822
-  - Parameters (guacd to localhost)
-    - Hostname: 172.17.0.1
-    - Port: 3389
-    - Username: ubuntu
-    - Password: <some password>
-    - Ignore server certificate: True
-
-# Screenshots
-Configuration:
-
-![Configuration](sample_configuration.png)
-
-Session:
-
-![Session](sample_session.png)
+- Authenticate with default credentials guacadmin:guacadmin
+- Change the guacadmin password via guacadmin -> Settings -> Preferences
+- Launch the desktop via guacadmin -> Home -> cloud_workstation
 
 # AMI Notes
 - AMI is [Ubuntu 1804](https://cloud-images.ubuntu.com/locator/ec2/), change the vendor_ami_name_string var as needed (especially the date).
