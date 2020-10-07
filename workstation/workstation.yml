@@ -5,7 +5,7 @@
   become_user: root
   tasks:
 
-    - name: apache2, xrdp, gnome, and guacamole/docker packages
+    - name: apache2, xrdp, xfce, and guacamole/docker packages
       apt:
         pkg:
           - apache2
