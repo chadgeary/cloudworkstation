@@ -1,6 +1,6 @@
 # s3 bucket
 resource "aws_s3_bucket" "cw-bucket" {
-  bucket                  = var.bucket_name
+  bucket                  = "${var.name_prefix}-bucket-${random_string.cw-random.result}"
   acl                     = "private"
   versioning {
     enabled = true
@@ -28,8 +28,8 @@ resource "aws_s3_bucket" "cw-bucket" {
         "s3:*"
       ],
       "Resource": [
-        "arn:aws:s3:::${var.bucket_name}",
-        "arn:aws:s3:::${var.bucket_name}/*"
+        "arn:aws:s3:::${var.name_prefix}-bucket-${random_string.cw-random.result}",
+        "arn:aws:s3:::${var.name_prefix}-bucket-${random_string.cw-random.result}/*"
       ]
     },
     {
@@ -41,7 +41,7 @@ resource "aws_s3_bucket" "cw-bucket" {
       "Action": [
         "s3:ListBucket"
       ],
-      "Resource": ["arn:aws:s3:::${var.bucket_name}"]
+      "Resource": ["arn:aws:s3:::${var.name_prefix}-bucket-${random_string.cw-random.result}"]
     },
     {
       "Sid": "Instance Get",
@@ -53,7 +53,7 @@ resource "aws_s3_bucket" "cw-bucket" {
         "s3:GetObject",
         "s3:GetObjectVersion"
       ],
-      "Resource": ["arn:aws:s3:::${var.bucket_name}/*"]
+      "Resource": ["arn:aws:s3:::${var.name_prefix}-bucket-${random_string.cw-random.result}/*"]
     },
     {
       "Sid": "Instance Put",
@@ -66,7 +66,7 @@ resource "aws_s3_bucket" "cw-bucket" {
         "s3:PutObjectAcl"
       ],
       "Resource": [
-        "arn:aws:s3:::${var.bucket_name}/ssm/*"
+        "arn:aws:s3:::${var.name_prefix}-bucket-${random_string.cw-random.result}/ssm/*"
       ]
     }
   ]

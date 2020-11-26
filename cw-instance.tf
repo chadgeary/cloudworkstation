@@ -1,9 +1,9 @@
 # Instance Key
 resource "aws_key_pair" "cw-instance-key" {
-  key_name                = "cw-instance-key"
+  key_name                = "${var.name_prefix}-instance-key-${random_string.cw-random.result}"
   public_key              = var.instance_key
   tags                    = {
-    Name                    = "cw-instance-key"
+    Name                    = "${var.name_prefix}-instance-key"
   }
 }
 
@@ -13,17 +13,17 @@ resource "aws_instance" "cw-instance-1" {
   instance_type           = var.instance_type
   iam_instance_profile    = aws_iam_instance_profile.cw-instance-profile.name
   key_name                = aws_key_pair.cw-instance-key.key_name
-  subnet_id               = aws_subnet.cw-pubnet1.id
-  private_ip              = var.pubnet1_instance_ip
-  vpc_security_group_ids  = [aws_security_group.cw-pubsg1.id]
+  subnet_id               = aws_subnet.cw-net.id
+  private_ip              = var.net_instance_ip
+  vpc_security_group_ids  = [aws_security_group.cw-sg.id]
   tags                    = {
-    Name                    = "${var.ec2_name_prefix}-workstation-1",
+    Name                    = "${var.name_prefix}-workstation-1-${random_string.cw-random.result}",
     cw                      = "True"
   }
   user_data               = <<EOF
 #!/bin/bash
 # set hostname
-hostnamectl set-hostname ${var.ec2_name_prefix}-workstation-1
+hostnamectl set-hostname ${var.name_prefix}-workstation-1-${random_string.cw-random.result}
 EOF
   root_block_device {
     volume_size             = var.instance_vol_size
@@ -38,7 +38,7 @@ EOF
 resource "aws_eip" "cw-eip-1" {
   vpc                     = true
   instance                = aws_instance.cw-instance-1.id
-  associate_with_private_ip = var.pubnet1_instance_ip
+  associate_with_private_ip = var.net_instance_ip
   depends_on              = [aws_internet_gateway.cw-gw]
 }
 

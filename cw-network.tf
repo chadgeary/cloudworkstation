@@ -4,7 +4,7 @@ resource "aws_vpc" "cw-vpc" {
   enable_dns_support      = "true"
   enable_dns_hostnames    = "true"
   tags                    = {
-    Name                  = "cw-vpc"
+    Name                  = "${var.name_prefix}-vpc-${random_string.cw-random.result}"
   }
 }
 
@@ -12,7 +12,7 @@ resource "aws_vpc" "cw-vpc" {
 resource "aws_internet_gateway" "cw-gw" {
   vpc_id                  = aws_vpc.cw-vpc.id
   tags                    = {
-    Name                  = "cw-gw"
+    Name                  = "${var.name_prefix}-gw-${random_string.cw-random.result}"
   }
 }
 
@@ -24,23 +24,23 @@ resource "aws_route_table" "cw-pubrt" {
     gateway_id              = aws_internet_gateway.cw-gw.id
   }
   tags                    = {
-    Name                  = "cw-pubrt"
+    Name                  = "${var.name_prefix}-pubrt-${random_string.cw-random.result}"
   }
 }
 
-# public subnets
-resource "aws_subnet" "cw-pubnet1" {
+# net
+resource "aws_subnet" "cw-net" {
   vpc_id                  = aws_vpc.cw-vpc.id
   availability_zone       = data.aws_availability_zones.cw-azs.names[0]
-  cidr_block              = var.pubnet1_cidr
+  cidr_block              = var.net_cidr
   tags                    = {
-    Name                  = "cw-pubnet1"
+    Name                  = "${var.name_prefix}-net-${random_string.cw-random.result}"
   }
   depends_on              = [aws_internet_gateway.cw-gw]
 }
 
 # public route table associations
-resource "aws_route_table_association" "rt-assoc-pubnet1" {
-  subnet_id               = aws_subnet.cw-pubnet1.id
+resource "aws_route_table_association" "rt-assoc-net" {
+  subnet_id               = aws_subnet.cw-net.id
   route_table_id          = aws_route_table.cw-pubrt.id
 }

@@ -8,9 +8,8 @@
     - name: apache2, xrdp, xfce, and guacamole/docker packages
       apt:
         pkg:
-          - apache2
           - docker.io
-          - python-pip
+          - python3-pip
           - xfce4
           - xfce4-terminal
           - xrdp
@@ -24,7 +23,7 @@
 
     - name: install docker python package for ansible
       pip:
-        executable: /usr/bin/pip
+        executable: /usr/bin/pip3
         name: docker
 
     - name: add xrdp user to ssl-cert group
@@ -47,10 +46,10 @@
         line: 'AllowRootLogin=False'
       register: sesman_ini
 
-    - name: global xsession configuration file
+    - name: xsession configuration file
       copy:
         src: xsession
-        dest: /opt/xsession
+        dest: /home/ubuntu/.xsession
         owner: xrdp
         group: xrdp
         mode: '0555'
@@ -77,13 +76,27 @@
         state: restarted
       when: xrdp_ini.changed or sesman_ini.changed
 
-    - name: Guacamole data dir
+    - name: Container dirs
       file:
-        path: /opt/guacamole
+        path: "/opt/{{ item }}"
         state: directory
         owner: root
         group: root
         mode: '0750'
+      with_items:
+        - guacamole
+        - webproxy
+
+    - name: secure web proxy confs
+      template:
+        src: "{{ item }}"
+        dest: "/opt/webproxy/{{ item }}"
+        owner: root
+        group: root
+        mode: 0444
+      with_items:
+        - httpd-ssl.conf
+        - httpd.conf
 
     - name: Determine db passwords set (root)
       stat:
@@ -167,8 +180,23 @@
         networks:
           - name: guacnet
             ipv4_address: "{{ guacnet_guacamole }}"
+        purge_networks: yes
+        restart_policy: "always"
+
+    - name: web proxy container
+      docker_container:
+        name: web_proxy
+        image: httpd:2.4
+        networks:
+          - name: guacnet
+            ipv4_address: "{{ guacnet_webproxy }}"
         ports:
-          - "8080:8080"
+          - "443:443"
+        volumes:
+          - /opt/webproxy/httpd-ssl.conf:/usr/local/apache2/conf/extra/httpd-ssl.conf:ro
+          - /opt/webproxy/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+          - /etc/ssl/certs/ssl-cert-snakeoil.pem:/usr/local/apache2/conf/server.crt:ro
+          - /etc/ssl/private/ssl-cert-snakeoil.key:/usr/local/apache2/conf/server.key:ro
         purge_networks: yes
         restart_policy: "always"
 
@@ -215,33 +243,6 @@
       file:
         path: /opt/guacamole/db_conf_done
         state: touch
-
-    - name: Enable Apache2 Modules for proxy and ssl
-      apache2_module:
-        name: "{{ item }}"
-        state: present
-      with_items:
-        - headers
-        - proxy
-        - proxy_http
-        - ssl
-      register: apache_modules
-
-    - name: Proxy Configuration for Apache
-      template:
-        src: 8080-web-proxy.conf
-        dest: /etc/apache2/sites-enabled/8080-web-proxy.conf
-        owner: root
-        group: root
-        mode: 0444
-      register: proxy_conf
-
-    - name: Apache2 Enabled / Restarted
-      systemd:
-        name: apache2
-        state: restarted
-        enabled: yes
-      when: apache_modules.changed or proxy_conf.changed
 
 # The following sets the default AMI user (ubuntu)'s password from a random string
 # The password is saved to a Guacamole session

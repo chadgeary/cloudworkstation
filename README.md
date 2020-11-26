@@ -53,5 +53,5 @@ https://console.aws.amazon.com/systems-manager/state-manager
 - Launch the desktop via guacadmin -> Home -> cloud_workstation
 
 # AMI Notes
-- AMI is [Ubuntu 1804](https://cloud-images.ubuntu.com/locator/ec2/), change the vendor_ami_name_string var as needed (especially the date).
+- AMI is [Ubuntu 2004](https://cloud-images.ubuntu.com/locator/ec2/), change the vendor_* vars as needed (especially the date).
 - AMI is assumed to have SSM installed, if not - install via user_data.

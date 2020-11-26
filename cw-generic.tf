@@ -10,11 +10,11 @@ variable "vpc_cidr" {
   type                     = string
 }
 
-variable "pubnet1_cidr" {
+variable "net_cidr" {
   type                     = string
 }
 
-variable "pubnet1_instance_ip" {
+variable "net_instance_ip" {
   type                     = string
 }
 
@@ -31,6 +31,10 @@ variable "guacnet_guacdb" {
 }
 
 variable "guacnet_guacamole" {
+  type                     = string
+}
+
+variable "guacnet_webproxy" {
   type                     = string
 }
 
@@ -59,12 +63,7 @@ variable "kms_manager" {
   description              = "An IAM user for management of KMS key"
 }
 
-variable "bucket_name" {
-  type                     = string
-  description              = "A unique bucket name to store playbooks and output of SSM"
-}
-
-variable "ec2_name_prefix" {
+variable "name_prefix" {
   type                     = string
   description              = "A friendly name prefix for the AMI and EC2 instances, e.g. 'cw' or 'dev'"
 }
@@ -96,4 +95,10 @@ data "aws_caller_identity" "cw-aws-account" {
 # kms cmk manager - granted read access to KMS CMKs
 data "aws_iam_user" "cw-kmsmanager" {
   user_name               = var.kms_manager
+}
+
+resource "random_string" "cw-random" {
+  length                  = 5
+  upper                   = false
+  special                 = false
 }

@@ -4,7 +4,7 @@ resource "aws_kms_key" "cw-kmscmk-s3" {
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
   enable_key_rotation     = "true"
   tags                    = {
-    Name                  = "cw-kmscmk-s3"
+    Name                  = "cw-kmscmk-s3-${random_string.cw-random.result}"
   }
   policy                  = <<EOF
 {
@@ -67,7 +67,7 @@ EOF
 }
 
 resource "aws_kms_alias" "cw-kmscmk-s3-alias" {
-  name                    = "alias/cw-ksmcmk-s3"
+  name                    = "alias/${var.name_prefix}-kmscmk-s3-${random_string.cw-random.result}"
   target_key_id           = aws_kms_key.cw-kmscmk-s3.key_id
 }
 
@@ -77,7 +77,7 @@ resource "aws_kms_key" "cw-kmscmk-ec2" {
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
   enable_key_rotation     = "true"
   tags                    = {
-    Name                  = "cw-kmscmk-ec2"
+    Name                  = "cw-kmscmk-ec2-${random_string.cw-random.result}"
   }
   policy                  = <<EOF
 {
@@ -138,6 +138,6 @@ EOF
 }
 
 resource "aws_kms_alias" "cw-kmscmk-ec2-alias" {
-  name                    = "alias/cw-ksmcmk-ec2"
+  name                    = "alias/${var.name_prefix}-kmscmk-ec2-${random_string.cw-random.result}"
   target_key_id           = aws_kms_key.cw-kmscmk-ec2.key_id
 }

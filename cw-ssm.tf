@@ -1,7 +1,91 @@
-# zookeepers
+resource "aws_ssm_document" "cw-ssm-doc" {
+  name                    = "${var.name_prefix}-ssm-doc-${random_string.cw-random.result}"
+  document_type           = "Command"
+  content                 = <<DOC
+  {
+    "schemaVersion": "2.2",
+    "description": "Ansible Playbooks via SSM for Ubuntu 18.04 and 20.04, installs Ansible properly.",
+    "parameters": {
+    "SourceType": {
+      "description": "(Optional) Specify the source type.",
+      "type": "String",
+      "allowedValues": [
+      "GitHub",
+      "S3"
+      ]
+    },
+    "SourceInfo": {
+      "description": "Specify 'path'. Important: If you specify S3, then the IAM instance profile on your managed instances must be configured with read access to Amazon S3.",
+      "type": "StringMap",
+      "displayType": "textarea",
+      "default": {}
+    },
+    "PlaybookFile": {
+      "type": "String",
+      "description": "(Optional) The Playbook file to run (including relative path). If the main Playbook file is located in the ./automation directory, then specify automation/playbook.yml.",
+      "default": "hello-world-playbook.yml",
+      "allowedPattern": "[(a-z_A-Z0-9\\-)/]+(.yml|.yaml)$"
+    },
+    "ExtraVariables": {
+      "type": "String",
+      "description": "(Optional) Additional variables to pass to Ansible at runtime. Enter key/value pairs separated by a space. For example: color=red flavor=cherry",
+      "default": "SSM=True",
+      "displayType": "textarea",
+      "allowedPattern": "^$|^\\w+\\=[^\\s|:();&]+(\\s\\w+\\=[^\\s|:();&]+)*$"
+    },
+    "Verbose": {
+      "type": "String",
+      "description": "(Optional) Set the verbosity level for logging Playbook executions. Specify -v for low verbosity, -vv or vvv for medium verbosity, and -vvvv for debug level.",
+      "allowedValues": [
+      "-v",
+      "-vv",
+      "-vvv",
+      "-vvvv"
+      ],
+      "default": "-v"
+    }
+    },
+    "mainSteps": [
+    {
+      "action": "aws:downloadContent",
+      "name": "downloadContent",
+      "inputs": {
+      "SourceType": "{{ SourceType }}",
+      "SourceInfo": "{{ SourceInfo }}"
+      }
+    },
+    {
+      "action": "aws:runShellScript",
+      "name": "runShellScript",
+      "inputs": {
+      "runCommand": [
+        "#!/bin/bash",
+        "# Ensure ansible is installed",
+        "sudo apt-get update",
+        "sudo DEBIAN_FRONTEND=noninteractive apt-get -y install python3-pip git",
+        "sudo pip3 install ansible",
+        "echo \"Running Ansible in `pwd`\"",
+        "#this section locates files and unzips them",
+        "for zip in $(find -iname '*.zip'); do",
+        "  unzip -o $zip",
+        "done",
+        "PlaybookFile=\"{{PlaybookFile}}\"",
+        "if [ ! -f  \"$${PlaybookFile}\" ] ; then",
+        "   echo \"The specified Playbook file doesn't exist in the downloaded bundle. Please review the relative path and file name.\" >&2",
+        "   exit 2",
+        "fi",
+        "/usr/local/bin/ansible-playbook -i \"localhost,\" -c local -e \"{{ExtraVariables}}\" \"{{Verbose}}\" \"$${PlaybookFile}\""
+      ]
+      }
+    }
+    ]
+  }
+DOC
+}
+
 resource "aws_ssm_association" "cw-ssm-assoc" {
-  association_name        = "cw-workstation"
-  name                    = "AWS-ApplyAnsiblePlaybooks"
+  association_name        = "${var.name_prefix}-ssm-assoc-${random_string.cw-random.result}"
+  name                    = aws_ssm_document.cw-ssm-doc.name
   targets {
     key                   = "tag:cw"
     values                = ["True"]
@@ -11,9 +95,7 @@ resource "aws_ssm_association" "cw-ssm-assoc" {
     s3_key_prefix           = "ssm"
   }
   parameters              = {
-    Check                   = "False"
-    ExtraVariables          = "SSM=True guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole}"
-    InstallDependencies     = "True"
+    ExtraVariables          = "guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole} guacnet_webproxy=${var.guacnet_webproxy}"
     PlaybookFile            = "workstation.yml"
     SourceInfo              = "{\"path\":\"https://s3.${var.aws_region}.amazonaws.com/${aws_s3_bucket.cw-bucket.id}/workstation/\"}"
     SourceType              = "S3"

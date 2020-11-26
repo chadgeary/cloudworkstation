@@ -5,7 +5,7 @@ data "aws_iam_policy" "cw-instance-policy-ssm" {
 
 # Instance Policy S3
 resource "aws_iam_policy" "cw-instance-policy-s3" {
-  name                    = "cw-instance-policy-s3"
+  name                    = "${var.name_prefix}-instance-policy-s3-${random_string.cw-random.result}"
   path                    = "/"
   description             = "Provides cw instances access to s3 objects/bucket"
   policy                  = <<EOF
@@ -56,7 +56,7 @@ EOF
 
 # Instance Role
 resource "aws_iam_role" "cw-instance-iam-role" {
-  name                    = "cw-instance-profile"
+  name                    = "${var.name_prefix}-instance-role-${random_string.cw-random.result}"
   path                    = "/"
   assume_role_policy      = <<EOF
 {
@@ -88,6 +88,6 @@ resource "aws_iam_role_policy_attachment" "cw-iam-attach-s3" {
 
 # Instance Profile
 resource "aws_iam_instance_profile" "cw-instance-profile" {
-  name                    = "cw-instance-profile"
+  name                    = "${var.name_prefix}-instance-profile-${random_string.cw-random.result}"
   role                    = aws_iam_role.cw-instance-iam-role.name
 }
