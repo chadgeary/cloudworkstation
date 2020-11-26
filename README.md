@@ -11,10 +11,6 @@ A browser-based linux desktop workstation in AWS. Built with Apache Guacamole an
 # Variables
 Edit the vars file (.tfvars) to customize the deployment, especially:
 
-**bucket_name**
-
-- a unique bucket name, terraform will create the bucket to store various resources.
-
 **mgmt_cidr**
 
 - an IP range granted webUI and EC2 SSH access.
@@ -29,10 +25,6 @@ Edit the vars file (.tfvars) to customize the deployment, especially:
 **instance_key**
 
 - a public SSH key for SSH access to instances via user `ubuntu`.
-
-**instance_vol_size**
-
-- the volume/filesystem size of the workstation disk, in GiB.
 
 # Deploy
 ```
