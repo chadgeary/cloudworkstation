@@ -41,7 +41,3 @@ resource "aws_eip" "cw-eip-1" {
   associate_with_private_ip = var.net_instance_ip
   depends_on              = [aws_internet_gateway.cw-gw]
 }
-
-output "cw-eip-1-output" {
-  value                   = aws_eip.cw-eip-1.public_ip
-}
