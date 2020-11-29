@@ -21,10 +21,13 @@
       register: packages_install
       until: packages_install is not failed
 
-    - name: install docker python package for ansible
+    - name: install boto3 botocore and docker python package for ansible
       pip:
         executable: /usr/bin/pip3
-        name: docker
+        name:
+          - boto3
+          - botocore
+          - docker
 
     - name: add xrdp user to ssl-cert group
       user:
@@ -244,12 +247,19 @@
         path: /opt/guacamole/db_conf_done
         state: touch
 
-# The following sets the default AMI user (ubuntu)'s password from a random string
-# The password is saved to a Guacamole session
+# The following sets the default AMI user (ubuntu)'s password from a random string,
+# guacadmin's password to cw_password from AWS Parameter secret
+# and creates a default RDP connection for the Ubuntu user in Guacamole
     - name: Determine User and Session one-time setup complete
       stat:
         path: /opt/guacamole/user_session_done
       register: usersession_one_time_done
+
+    - name: Get SSM parameter cw_password (One Time)
+      set_fact:
+        cw_password: "{{ lookup('aws_ssm', name_prefix + '-cw-web-password-' + name_suffix, decrypt=True, region=aws_region) }}"
+      when: usersession_one_time_done.stat.exists|bool == False
+      no_log: True
 
     - name: Generate Ubuntu password (One Time)
       set_fact:
@@ -266,10 +276,13 @@
     - name: Auth and create Session (One Time)
       shell: |
         # Auth for token
-        GUAC_TOKEN=$(curl 'https://127.0.0.1:443/guacamole/api/tokens' -c cookies.tmp -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Origin: https://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-raw 'username=guacadmin&password=guacadmin' --compressed --insecure --silent | awk -F'"' '{ print $4 }')
+        GUAC_TOKEN=$(curl 'https://127.0.0.1:443/guacamole/api/tokens' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Origin: https://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-raw 'username=guacadmin&password=guacadmin' --compressed --insecure --silent | awk -F'"' '{ print $4 }')
 
         # Add local connection
         curl "https://127.0.0.1:443/guacamole/api/session/data/mysql/connections?token=$GUAC_TOKEN" -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"parentIdentifier":"ROOT","name":"cloud_workstation","protocol":"rdp","parameters":{"port":"3389","read-only":"","swap-red-blue":"","cursor":"","color-depth":"","clipboard-encoding":"","disable-copy":"","disable-paste":"","dest-port":"","recording-exclude-output":"","recording-exclude-mouse":"","recording-include-keys":"","create-recording-path":"","enable-sftp":"","sftp-port":"","sftp-server-alive-interval":"","sftp-disable-download":"","sftp-disable-upload":"","enable-audio":"","wol-send-packet":"","wol-wait-time":"","security":"","disable-auth":"","ignore-cert":"true","gateway-port":"","server-layout":"","timezone":null,"console":"","width":"","height":"","dpi":"","resize-method":"","console-audio":"","disable-audio":"","enable-audio-input":"","enable-printing":"","enable-drive":"","disable-download":"","disable-upload":"","create-drive-path":"","enable-wallpaper":"","enable-theming":"","enable-font-smoothing":"","enable-full-window-drag":"","enable-desktop-composition":"","enable-menu-animations":"","disable-bitmap-caching":"","disable-offscreen-caching":"","disable-glyph-caching":"","preconnection-id":"","hostname":"172.17.0.1","username":"ubuntu","password":"{{ ubuntu_pass }}"},"attributes":{"max-connections":"1","max-connections-per-user":"1","weight":"","failover-only":"","guacd-port":"4822","guacd-encryption":"","guacd-hostname":"{{ guacnet_guacd }}"}}' --compressed --insecure
+
+        # Change default password to secret
+        curl "https://127.0.0.1:443/guacamole/api/session/data/mysql/users/guacadmin/password?token=$GUAC_TOKEN" -X 'PUT' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"oldPassword":"guacadmin","newPassword":"{{ cw_password }}"}' --compressed --insecure
       when: usersession_one_time_done.stat.exists|bool == False
       no_log: True
 

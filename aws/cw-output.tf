@@ -9,6 +9,7 @@ output "cloudworkstation-output" {
   ssh ubuntu@${aws_eip.cw-eip-1.public_ip}
   
   ## WebUI ##
+  # Username: guacadmin
   https://${aws_eip.cw-eip-1.public_ip}/guacamole/
   
   ## Update / Ansible Rerun ##

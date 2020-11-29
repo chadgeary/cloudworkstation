@@ -76,6 +76,11 @@ variable "name_prefix" {
   description              = "A friendly name prefix for the AMI and EC2 instances, e.g. 'cw' or 'dev'"
 }
 
+variable "cw_password" {
+  type                     = string
+  description              = "The password to replace guacadmin's default Web UI password"
+}
+
 variable "vendor_ami_account_number" {
   type                     = string
   description              = "The account number of the vendor supplying the base AMI"

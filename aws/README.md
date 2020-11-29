@@ -138,12 +138,18 @@ Edit the vars file (cw.tfvars) to customize the deployment, especially:
 # deploying from home? This should be your public IP address with a /32 suffix.
 
 # kms_manager
-# The AWS username (not root) granted access to read the Wireguard VPN configuration files in S3.
+# The AWS username (not root) granted access to various resources (including SSM logs in S3, SSM parameter store).
+
+# cw_password
+# password for guacadmin webUI account
+
+# aws_region
+# region to build the services in
 ```
 
 # Post-Deployment
 - Wait for Ansible Playbook, watch [AWS State Manager](https://console.aws.amazon.com/systems-manager/state-manager)
-- See terraform output for VPN Client configuration link and the Pihole WebUI address.
+- See terraform output for WebUI link. Username: `guacadmin`
 
 # FAQs
 - Using an ISP with a dynamic IP (DHCP) and the IP address changed? Pihole webUI and SSH access will be blocked until the mgmt_cidr is updated.

@@ -1,3 +1,10 @@
+resource "aws_ssm_parameter" "cw-ssm-param-pass" {
+  name                    = "${var.name_prefix}-cw-web-password-${random_string.cw-random.result}"
+  type                    = "SecureString"
+  key_id                  = aws_kms_key.cw-kmscmk-ssm.key_id
+  value                   = var.cw_password
+}
+
 resource "aws_ssm_document" "cw-ssm-doc" {
   name                    = "${var.name_prefix}-ssm-doc-${random_string.cw-random.result}"
   document_type           = "Command"
@@ -95,9 +102,9 @@ resource "aws_ssm_association" "cw-ssm-assoc" {
     s3_key_prefix           = "ssm"
   }
   parameters              = {
-    ExtraVariables          = "guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole} guacnet_webproxy=${var.guacnet_webproxy}"
-    PlaybookFile            = "workstation.yml"
-    SourceInfo              = "{\"path\":\"https://s3.${var.aws_region}.amazonaws.com/${aws_s3_bucket.cw-bucket.id}/workstation/\"}"
+    ExtraVariables          = "name_prefix=${var.name_prefix} name_suffix=${random_string.cw-random.result} guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole} guacnet_webproxy=${var.guacnet_webproxy} aws_region=${var.aws_region}"
+    PlaybookFile            = "cloud_workstation_aws.yml"
+    SourceInfo              = "{\"path\":\"https://s3.${var.aws_region}.amazonaws.com/${aws_s3_bucket.cw-bucket.id}/playbook/\"}"
     SourceType              = "S3"
     Verbose                 = "-v"
   }
