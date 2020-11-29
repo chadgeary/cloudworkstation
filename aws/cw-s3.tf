@@ -85,9 +85,9 @@ resource "aws_s3_bucket_public_access_block" "cw-bucket-pubaccessblock" {
 
 # s3 objects (playbook)
 resource "aws_s3_bucket_object" "cw-workstation-files" {
-  for_each                = fileset("workstation/", "*")
+  for_each                = fileset("../playbooks/", "*")
   bucket                  = aws_s3_bucket.cw-bucket.id
-  key                     = "workstation/${each.value}"
-  content_base64          = base64encode(file("${path.module}/workstation/${each.value}"))
+  key                     = "playbook/${each.value}"
+  content_base64          = base64encode(file("${path.module}/../playbooks/${each.value}"))
   kms_key_id              = aws_kms_key.cw-kmscmk-s3.arn
 }

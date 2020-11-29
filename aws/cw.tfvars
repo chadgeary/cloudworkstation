@@ -29,9 +29,13 @@ vpc_cidr = "10.10.11.0/24"
 net_cidr = "10.10.11.0/26"
 net_instance_ip = "10.10.11.5"
 
-# docker specific vars, modify these values if there would be overlap with existing resources on the ec2 instance.
-guacnet_cidr = "192.168.11.0/24"
-guacnet_guacd = "192.168.11.2"
-guacnet_guacdb = "192.168.11.3"
-guacnet_guacamole = "192.168.11.4"
-guacnet_webproxy = "192.168.11.5"
+# docker specific vars, modify these values if there would be overlap with existing resources on the ec2 instance (or client networks).
+guacnet_cidr = "172.16.20.0/24"
+guacnet_guacd = "172.16.20.2"
+guacnet_guacdb = "172.16.20.3"
+guacnet_guacamole = "172.16.20.4"
+guacnet_webproxy = "172.16.20.5"
+guacnet_wireguard = "172.16.20.6"
+
+# wireguard specific vars, modify these values if there would be overlap with existing resources on the ec2 instance (or client networks).
+wireguard_network = "172.16.21.0"

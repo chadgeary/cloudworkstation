@@ -38,6 +38,14 @@ variable "guacnet_webproxy" {
   type                     = string
 }
 
+variable "guacnet_wireguard" {
+  type                     = string
+}
+
+variable "wireguard_network" {
+  type                     = string
+}
+
 variable "mgmt_cidr" {
   type                     = string
   description              = "Subnet CIDR allowed to access WebUI and SSH, e.g. 172.16.10.0/30"
