@@ -5,21 +5,40 @@
   become_user: root
   tasks:
 
-    - name: apache2, xrdp, xfce, and guacamole/docker packages
+    - name: docker pip3 ssl xfce and xrdp
       apt:
         pkg:
           - docker.io
           - python3-pip
+          - ssl-cert
           - xfce4
           - xfce4-terminal
           - xrdp
-          - ssl-cert
         state: latest
         update_cache: yes
-      retries: 6
-      delay: 20
+      retries: 3
+      delay: 30
       register: packages_install
       until: packages_install is not failed
+      when: desktop == "xfce"
+
+    - name: docker gnome pip3 ssl and xrdp
+      apt:
+        pkg:
+          - docker.io
+          - gdm3
+          - gnome-session
+          - gnome-terminal
+          - python3-pip
+          - ssl-cert
+          - xrdp
+        state: latest
+        update_cache: yes
+      retries: 3
+      delay: 30
+      register: packages_install
+      until: packages_install is not failed
+      when: desktop == "gnome"
 
     - name: install boto3 botocore and docker python package for ansible
       pip:
@@ -49,13 +68,36 @@
         line: 'AllowRootLogin=False'
       register: sesman_ini
 
-    - name: xsession configuration file
-      copy:
-        src: xsession
-        dest: /home/ubuntu/.xsession
+    - name: xsession for ubuntu user
+      blockinfile:
+        path: /home/ubuntu/.xsession
+        create: yes
         owner: xrdp
         group: xrdp
-        mode: '0555'
+        mode: '0544'
+        block: |
+          # Enables the session for ubuntu user 
+          export LOGNAME=$USER
+          export LIBGL_ALWAYS_INDIRECT=1
+          unset SESSION_MANAGER
+          unset DBUS_SESSION_BUS_ADDRESS
+          {% if desktop == 'xfce' %}xfce4-session{% elif desktop == 'gnome' %}gnome-session{% endif %}
+
+    - name: colord for gnome
+      blockinfile:
+        path: /etc/polkit-1/localauthority/50-local.d/allow-colord.pkla
+        create: yes
+        owner: root
+        group: root
+        mode: '0444'
+        block: |
+          [Allow colord for all users]
+          Identity=unix-user:*
+          Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile 
+          ResultAny=yes
+          ResualtInactive=auth_admin
+          ResultActive=yes
+      when: desktop == 'gnome'
 
     - name: set xrdp sesman systemd unit to wait for docker
       lineinfile:

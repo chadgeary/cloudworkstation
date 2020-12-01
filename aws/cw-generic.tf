@@ -81,6 +81,11 @@ variable "cw_password" {
   description              = "The password to replace guacadmin's default Web UI password"
 }
 
+variable "desktop" {
+  type                     = string
+  description              = "Desktop environment, either gnome or xfce"
+}
+
 variable "vendor_ami_account_number" {
   type                     = string
   description              = "The account number of the vendor supplying the base AMI"

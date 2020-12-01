@@ -102,7 +102,7 @@ resource "aws_ssm_association" "cw-ssm-assoc" {
     s3_key_prefix           = "ssm"
   }
   parameters              = {
-    ExtraVariables          = "name_prefix=${var.name_prefix} name_suffix=${random_string.cw-random.result} guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole} guacnet_webproxy=${var.guacnet_webproxy} aws_region=${var.aws_region}"
+    ExtraVariables          = "name_prefix=${var.name_prefix} name_suffix=${random_string.cw-random.result} guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole} guacnet_webproxy=${var.guacnet_webproxy} aws_region=${var.aws_region} desktop=${var.desktop}"
     PlaybookFile            = "cloud_workstation_aws.yml"
     SourceInfo              = "{\"path\":\"https://s3.${var.aws_region}.amazonaws.com/${aws_s3_bucket.cw-bucket.id}/playbook/\"}"
     SourceType              = "S3"

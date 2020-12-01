@@ -14,6 +14,9 @@ cw_password = "changeme"
 # region to build the services in
 aws_region = "us-east-1"
 
+# desktop, either xfce or gnome
+desktop = "xfce"
+
 ## UNCOMMON ##
 # aws profile (e.g. from aws configure, usually "default")
 aws_profile = "default"
