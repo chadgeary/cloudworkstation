@@ -8,7 +8,7 @@ mgmt_cidr = "a.b.c.d/32"
 # existing aws iam user granted access to the kms key (for browsing KMS encrypted services like S3 or SNS).
 kms_manager = "some_iam_user"
 
-# the guacadmin user password
+# the guacadmin and ubuntu user password - note the EC2 instance has access to this secret (a consideration for multi-user setups).
 cw_password = "changeme"
 
 # region to build the services in

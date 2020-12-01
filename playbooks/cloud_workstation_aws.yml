@@ -78,7 +78,7 @@
         block: |
           # Enables the session for ubuntu user 
           export LOGNAME=$USER
-          export LIBGL_ALWAYS_INDIRECT=1
+          export LIBGL_ALWAYS_INDIRECT=0
           unset SESSION_MANAGER
           unset DBUS_SESSION_BUS_ADDRESS
           {% if desktop == 'xfce' %}xfce4-session{% elif desktop == 'gnome' %}gnome-session{% endif %}
@@ -303,16 +303,10 @@
       when: usersession_one_time_done.stat.exists|bool == False
       no_log: True
 
-    - name: Generate Ubuntu password (One Time)
-      set_fact:
-        ubuntu_pass: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
-      when: usersession_one_time_done.stat.exists|bool == False
-      no_log: True
-
     - name: Set Ubuntu password (One Time)
       user:
         name: ubuntu
-        password: "{{ ubuntu_pass | password_hash('sha512') }}"
+        password: "{{ cw_password | password_hash('sha512') }}"
       when: usersession_one_time_done.stat.exists|bool == False
 
     - name: Auth and create Session (One Time)
@@ -321,7 +315,7 @@
         GUAC_TOKEN=$(curl 'https://127.0.0.1:443/guacamole/api/tokens' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Origin: https://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-raw 'username=guacadmin&password=guacadmin' --compressed --insecure --silent | awk -F'"' '{ print $4 }')
 
         # Add local connection
-        curl "https://127.0.0.1:443/guacamole/api/session/data/mysql/connections?token=$GUAC_TOKEN" -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"parentIdentifier":"ROOT","name":"cloud_workstation","protocol":"rdp","parameters":{"port":"3389","read-only":"","swap-red-blue":"","cursor":"","color-depth":"","clipboard-encoding":"","disable-copy":"","disable-paste":"","dest-port":"","recording-exclude-output":"","recording-exclude-mouse":"","recording-include-keys":"","create-recording-path":"","enable-sftp":"","sftp-port":"","sftp-server-alive-interval":"","sftp-disable-download":"","sftp-disable-upload":"","enable-audio":"","wol-send-packet":"","wol-wait-time":"","security":"","disable-auth":"","ignore-cert":"true","gateway-port":"","server-layout":"","timezone":null,"console":"","width":"","height":"","dpi":"","resize-method":"","console-audio":"","disable-audio":"","enable-audio-input":"","enable-printing":"","enable-drive":"","disable-download":"","disable-upload":"","create-drive-path":"","enable-wallpaper":"","enable-theming":"","enable-font-smoothing":"","enable-full-window-drag":"","enable-desktop-composition":"","enable-menu-animations":"","disable-bitmap-caching":"","disable-offscreen-caching":"","disable-glyph-caching":"","preconnection-id":"","hostname":"172.17.0.1","username":"ubuntu","password":"{{ ubuntu_pass }}"},"attributes":{"max-connections":"1","max-connections-per-user":"1","weight":"","failover-only":"","guacd-port":"4822","guacd-encryption":"","guacd-hostname":"{{ guacnet_guacd }}"}}' --compressed --insecure
+        curl "https://127.0.0.1:443/guacamole/api/session/data/mysql/connections?token=$GUAC_TOKEN" -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"parentIdentifier":"ROOT","name":"cloud_workstation","protocol":"rdp","parameters":{"port":"3389","read-only":"","swap-red-blue":"","cursor":"","color-depth":"","clipboard-encoding":"","disable-copy":"","disable-paste":"","dest-port":"","recording-exclude-output":"","recording-exclude-mouse":"","recording-include-keys":"","create-recording-path":"","enable-sftp":"","sftp-port":"","sftp-server-alive-interval":"","sftp-disable-download":"","sftp-disable-upload":"","enable-audio":"","wol-send-packet":"","wol-wait-time":"","security":"","disable-auth":"","ignore-cert":"true","gateway-port":"","server-layout":"","timezone":null,"console":"","width":"","height":"","dpi":"","resize-method":"","console-audio":"","disable-audio":"","enable-audio-input":"","enable-printing":"","enable-drive":"","disable-download":"","disable-upload":"","create-drive-path":"","enable-wallpaper":"","enable-theming":"","enable-font-smoothing":"","enable-full-window-drag":"","enable-desktop-composition":"","enable-menu-animations":"","disable-bitmap-caching":"","disable-offscreen-caching":"","disable-glyph-caching":"","preconnection-id":"","hostname":"172.17.0.1","username":"ubuntu","password":"{{ cw_password }}"},"attributes":{"max-connections":"1","max-connections-per-user":"1","weight":"","failover-only":"","guacd-port":"4822","guacd-encryption":"","guacd-hostname":"{{ guacnet_guacd }}"}}' --compressed --insecure
 
         # Change default password to secret
         curl "https://127.0.0.1:443/guacamole/api/session/data/mysql/users/guacadmin/password?token=$GUAC_TOKEN" -X 'PUT' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"oldPassword":"guacadmin","newPassword":"{{ cw_password }}"}' --compressed --insecure

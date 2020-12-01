@@ -134,14 +134,14 @@ Edit the vars file (cw.tfvars) to customize the deployment, especially:
 # cat ~/.ssh/id_rsa.pub
 
 # mgmt_cidr
-# an IP range granted webUI, EC2 SSH access.
+# an IP range granted webUI, SSH access.
 # deploying from home? This should be your public IP address with a /32 suffix.
 
 # kms_manager
 # The AWS username (not root) granted access to various resources (including SSM logs in S3, SSM parameter store).
 
 # cw_password
-# password for guacadmin webUI account
+# password for guacadmin webUI account and ubuntu user
 
 # aws_region
 # region to build the services in
