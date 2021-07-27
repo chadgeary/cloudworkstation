@@ -1,14 +1,14 @@
 resource "aws_ssm_parameter" "cw-ssm-param-pass" {
-  name                    = "${var.name_prefix}-cw-web-password-${random_string.cw-random.result}"
-  type                    = "SecureString"
-  key_id                  = aws_kms_key.cw-kmscmk-ssm.key_id
-  value                   = var.cw_password
+  name   = "${var.name_prefix}-cw-web-password-${random_string.cw-random.result}"
+  type   = "SecureString"
+  key_id = aws_kms_key.cw-kmscmk-ssm.key_id
+  value  = var.cw_password
 }
 
 resource "aws_ssm_document" "cw-ssm-doc" {
-  name                    = "${var.name_prefix}-ssm-doc-${random_string.cw-random.result}"
-  document_type           = "Command"
-  content                 = <<DOC
+  name          = "${var.name_prefix}-ssm-doc-${random_string.cw-random.result}"
+  document_type = "Command"
+  content       = <<DOC
   {
     "schemaVersion": "2.2",
     "description": "Ansible Playbooks via SSM for Ubuntu 18.04 and 20.04, installs Ansible properly.",
@@ -91,22 +91,22 @@ DOC
 }
 
 resource "aws_ssm_association" "cw-ssm-assoc" {
-  association_name        = "${var.name_prefix}-ssm-assoc-${random_string.cw-random.result}"
-  name                    = aws_ssm_document.cw-ssm-doc.name
+  association_name = "${var.name_prefix}-ssm-assoc-${random_string.cw-random.result}"
+  name             = aws_ssm_document.cw-ssm-doc.name
   targets {
-    key                   = "tag:cw"
-    values                = ["True"]
+    key    = "tag:cw"
+    values = ["True"]
   }
   output_location {
-    s3_bucket_name          = aws_s3_bucket.cw-bucket.id
-    s3_key_prefix           = "ssm"
+    s3_bucket_name = aws_s3_bucket.cw-bucket.id
+    s3_key_prefix  = "ssm"
   }
-  parameters              = {
-    ExtraVariables          = "name_prefix=${var.name_prefix} name_suffix=${random_string.cw-random.result} guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole} guacnet_webproxy=${var.guacnet_webproxy} aws_region=${var.aws_region} desktop=${var.desktop}"
-    PlaybookFile            = "cloud_workstation_aws.yml"
-    SourceInfo              = "{\"path\":\"https://s3.${var.aws_region}.amazonaws.com/${aws_s3_bucket.cw-bucket.id}/playbook/\"}"
-    SourceType              = "S3"
-    Verbose                 = "-v"
+  parameters = {
+    ExtraVariables = "name_prefix=${var.name_prefix} name_suffix=${random_string.cw-random.result} guacnet_cidr=${var.guacnet_cidr} guacnet_guacd=${var.guacnet_guacd} guacnet_guacdb=${var.guacnet_guacdb} guacnet_guacamole=${var.guacnet_guacamole} guacnet_webproxy=${var.guacnet_webproxy} guacnet_duckdnsupdater=${var.guacnet_duckdnsupdater} aws_region=${var.aws_region} desktop=${var.desktop} enable_duckdns=${var.enable_duckdns} duckdns_domain=${var.duckdns_domain} duckdns_token=${var.duckdns_token} letsencrypt_email=${var.letsencrypt_email}"
+    PlaybookFile   = "cloud_workstation_aws.yml"
+    SourceInfo     = "{\"path\":\"https://s3.${var.aws_region}.amazonaws.com/${aws_s3_bucket.cw-bucket.id}/playbook/\"}"
+    SourceType     = "S3"
+    Verbose        = "-v"
   }
-  depends_on              = [aws_iam_role_policy_attachment.cw-iam-attach-ssm, aws_iam_role_policy_attachment.cw-iam-attach-s3,aws_s3_bucket_object.cw-workstation-files]
+  depends_on = [aws_iam_role_policy_attachment.cw-iam-attach-ssm, aws_iam_role_policy_attachment.cw-iam-attach-s3, aws_s3_bucket_object.cw-workstation-files]
 }

@@ -1,12 +1,12 @@
 resource "aws_kms_key" "cw-kmscmk-s3" {
-  description             = "Key for cw s3"
-  key_usage               = "ENCRYPT_DECRYPT"
+  description              = "Key for cw s3"
+  key_usage                = "ENCRYPT_DECRYPT"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
-  enable_key_rotation     = "true"
-  tags                    = {
-    Name                  = "cw-kmscmk-s3-${random_string.cw-random.result}"
+  enable_key_rotation      = "true"
+  tags = {
+    Name = "cw-kmscmk-s3-${random_string.cw-random.result}"
   }
-  policy                  = <<EOF
+  policy = <<EOF
 {
   "Id": "cw-kmskeypolicy-s3",
   "Version": "2012-10-17",
@@ -67,19 +67,19 @@ EOF
 }
 
 resource "aws_kms_alias" "cw-kmscmk-s3-alias" {
-  name                    = "alias/${var.name_prefix}-kmscmk-s3-${random_string.cw-random.result}"
-  target_key_id           = aws_kms_key.cw-kmscmk-s3.key_id
+  name          = "alias/${var.name_prefix}-kmscmk-s3-${random_string.cw-random.result}"
+  target_key_id = aws_kms_key.cw-kmscmk-s3.key_id
 }
 
 resource "aws_kms_key" "cw-kmscmk-ec2" {
-  description             = "Key for cw ec2/ebs"
-  key_usage               = "ENCRYPT_DECRYPT"
+  description              = "Key for cw ec2/ebs"
+  key_usage                = "ENCRYPT_DECRYPT"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
-  enable_key_rotation     = "true"
-  tags                    = {
-    Name                  = "cw-kmscmk-ec2-${random_string.cw-random.result}"
+  enable_key_rotation      = "true"
+  tags = {
+    Name = "cw-kmscmk-ec2-${random_string.cw-random.result}"
   }
-  policy                  = <<EOF
+  policy = <<EOF
 {
   "Id": "cw-kmskeypolicy-ec2",
   "Version": "2012-10-17",
@@ -138,19 +138,19 @@ EOF
 }
 
 resource "aws_kms_alias" "cw-kmscmk-ec2-alias" {
-  name                    = "alias/${var.name_prefix}-kmscmk-ec2-${random_string.cw-random.result}"
-  target_key_id           = aws_kms_key.cw-kmscmk-ec2.key_id
+  name          = "alias/${var.name_prefix}-kmscmk-ec2-${random_string.cw-random.result}"
+  target_key_id = aws_kms_key.cw-kmscmk-ec2.key_id
 }
 
 resource "aws_kms_key" "cw-kmscmk-ssm" {
-  description             = "Key for cw ssm/ebs"
-  key_usage               = "ENCRYPT_DECRYPT"
+  description              = "Key for cw ssm/ebs"
+  key_usage                = "ENCRYPT_DECRYPT"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
-  enable_key_rotation     = "true"
-  tags                    = {
-    Name                  = "cw-kmscmk-ssm-${random_string.cw-random.result}"
+  enable_key_rotation      = "true"
+  tags = {
+    Name = "cw-kmscmk-ssm-${random_string.cw-random.result}"
   }
-  policy                  = <<EOF
+  policy = <<EOF
 {
   "Id": "cw-kmskeypolicy-ssm",
   "Version": "2012-10-17",
@@ -185,6 +185,6 @@ EOF
 }
 
 resource "aws_kms_alias" "cw-kmscmk-ssm-alias" {
-  name                    = "alias/${var.name_prefix}-kmscmk-ssm-${random_string.cw-random.result}"
-  target_key_id           = aws_kms_key.cw-kmscmk-ssm.key_id
+  name          = "alias/${var.name_prefix}-kmscmk-ssm-${random_string.cw-random.result}"
+  target_key_id = aws_kms_key.cw-kmscmk-ssm.key_id
 }

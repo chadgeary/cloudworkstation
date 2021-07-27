@@ -5,6 +5,22 @@
   become_user: root
   tasks:
 
+    - name: if not defined, set duckdns_domain to blank value
+      set_fact:
+        duckdns_domain: "{% if duckdns_domain is not defined %}{% else %}{{ duckdns_domain }}{% endif %}"
+
+    - name: if not defined, set duckdns_token to blank value
+      set_fact:
+        duckdns_token: "{% if duckdns_token is not defined %}{% else %}{{ duckdns_token }}{% endif %}"
+
+    - name: if not defined, set letsencrypt_email to blank value
+      set_fact:
+        letsencrypt_email: "{% if letsencrypt_email is not defined %}{% else %}{{ letsencrypt_email }}{% endif %}"
+
+    - name: if not defined, set docker_duckdnsupdater to blank value
+      set_fact:
+        guacnet_duckdnsupdater: "{% if guacnet_duckdnsupdater is not defined %}{% else %}{{ guacnet_duckdnsupdater }}{% endif %}"
+
     - name: docker pip3 ssl xfce and xrdp
       apt:
         pkg:
@@ -131,6 +147,8 @@
       with_items:
         - guacamole
         - webproxy
+        - webproxy/nginx
+        - webproxy/nginx/proxy-confs
 
     - name: secure web proxy confs
       template:
@@ -142,6 +160,9 @@
       with_items:
         - httpd-ssl.conf
         - httpd.conf
+        - nginx/nginx.conf
+        - nginx/proxy-confs/cloudworkstation.conf
+      register: proxy_conf_files
 
     - name: Determine db passwords set (root)
       stat:
@@ -244,6 +265,54 @@
           - /etc/ssl/private/ssl-cert-snakeoil.key:/usr/local/apache2/conf/server.key:ro
         purge_networks: yes
         restart_policy: "always"
+        restart: "{% if proxy_conf_files.changed %}yes{% else %}no{% endif %}"
+      when: duckdns_domain == ""
+
+    - name: duckdnsupdater container
+      docker_container:
+        name: duckdnsupdater
+        hostname: duckdnsupdater
+        image: ghcr.io/linuxserver/duckdns
+        networks:
+          - name: guacnet
+            ipv4_address: "{{ guacnet_duckdnsupdater }}"
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          TZ: "UTC"
+          SUBDOMAINS: "{{ duckdns_domain.split('.')[0] }}"
+          TOKEN: "{{ duckdns_token }}"
+        pull: yes
+        purge_networks: yes
+        restart_policy: "always"
+        container_default_behavior: "compatibility"
+      when: duckdns_domain != ""
+
+    - name: duckdns web proxy container
+      docker_container:
+        name: web_proxy
+        hostname: webproxy
+        image: ghcr.io/linuxserver/swag
+        networks:
+          - name: guacnet
+            ipv4_address: "{{ guacnet_webproxy }}"
+        env:
+          PUID: "1000"
+          PGID: "1000"
+          TZ: "UTC"
+          URL: "{{ duckdns_domain }}"
+          DUCKDNSTOKEN: "{{ duckdns_token }}"
+          EMAIL: "{{ letsencrypt_email }}"
+          VALIDATION: "duckdns"
+        ports:
+          - "443:443"
+        volumes: "/opt/webproxy:/config"
+        pull: yes
+        purge_networks: yes
+        restart_policy: "always"
+        container_default_behavior: "compatibility"
+        restart: "{% if proxy_conf_files.changed %}yes{% else %}no{% endif %}"
+      when: duckdns_domain != ""
 
     - name: Determine if (One Time) was done
       stat:
@@ -312,13 +381,13 @@
     - name: Auth and create Session (One Time)
       shell: |
         # Auth for token
-        GUAC_TOKEN=$(curl 'https://127.0.0.1:443/guacamole/api/tokens' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Origin: https://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-raw 'username=guacadmin&password=guacadmin' --compressed --insecure --silent | awk -F'"' '{ print $4 }')
+        GUAC_TOKEN=$(curl 'https://{% if duckdns_domain != "" %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443/guacamole/api/tokens' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Origin: https://{% if duckdns_domain != "" %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-raw 'username=guacadmin&password=guacadmin' --compressed --insecure --silent | awk -F'"' '{ print $4 }')
 
         # Add local connection
-        curl "https://127.0.0.1:443/guacamole/api/session/data/mysql/connections?token=$GUAC_TOKEN" -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"parentIdentifier":"ROOT","name":"cloud_workstation","protocol":"rdp","parameters":{"port":"3389","read-only":"","swap-red-blue":"","cursor":"","color-depth":"","clipboard-encoding":"","disable-copy":"","disable-paste":"","dest-port":"","recording-exclude-output":"","recording-exclude-mouse":"","recording-include-keys":"","create-recording-path":"","enable-sftp":"","sftp-port":"","sftp-server-alive-interval":"","sftp-disable-download":"","sftp-disable-upload":"","enable-audio":"","wol-send-packet":"","wol-wait-time":"","security":"","disable-auth":"","ignore-cert":"true","gateway-port":"","server-layout":"","timezone":null,"console":"","width":"","height":"","dpi":"","resize-method":"","console-audio":"","disable-audio":"","enable-audio-input":"","enable-printing":"","enable-drive":"","disable-download":"","disable-upload":"","create-drive-path":"","enable-wallpaper":"","enable-theming":"","enable-font-smoothing":"","enable-full-window-drag":"","enable-desktop-composition":"","enable-menu-animations":"","disable-bitmap-caching":"","disable-offscreen-caching":"","disable-glyph-caching":"","preconnection-id":"","hostname":"172.17.0.1","username":"ubuntu","password":"{{ cw_password }}"},"attributes":{"max-connections":"5","max-connections-per-user":"5","weight":"","failover-only":"","guacd-port":"4822","guacd-encryption":"","guacd-hostname":"{{ guacnet_guacd }}"}}' --compressed --insecure
+        curl "https://{% if duckdns_domain != "" %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443/guacamole/api/session/data/mysql/connections?token=$GUAC_TOKEN" -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://{% if duckdns_domain != "" %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"parentIdentifier":"ROOT","name":"cloud_workstation","protocol":"rdp","parameters":{"port":"3389","read-only":"","swap-red-blue":"","cursor":"","color-depth":"","clipboard-encoding":"","disable-copy":"","disable-paste":"","dest-port":"","recording-exclude-output":"","recording-exclude-mouse":"","recording-include-keys":"","create-recording-path":"","enable-sftp":"","sftp-port":"","sftp-server-alive-interval":"","sftp-disable-download":"","sftp-disable-upload":"","enable-audio":"","wol-send-packet":"","wol-wait-time":"","security":"","disable-auth":"","ignore-cert":"true","gateway-port":"","server-layout":"","timezone":null,"console":"","width":"","height":"","dpi":"","resize-method":"","console-audio":"","disable-audio":"","enable-audio-input":"","enable-printing":"","enable-drive":"","disable-download":"","disable-upload":"","create-drive-path":"","enable-wallpaper":"","enable-theming":"","enable-font-smoothing":"","enable-full-window-drag":"","enable-desktop-composition":"","enable-menu-animations":"","disable-bitmap-caching":"","disable-offscreen-caching":"","disable-glyph-caching":"","preconnection-id":"","hostname":"172.17.0.1","username":"ubuntu","password":"{{ cw_password }}"},"attributes":{"max-connections":"5","max-connections-per-user":"5","weight":"","failover-only":"","guacd-port":"4822","guacd-encryption":"","guacd-hostname":"{{ guacnet_guacd }}"}}' --compressed --insecure
 
         # Change default password to secret
-        curl "https://127.0.0.1:443/guacamole/api/session/data/mysql/users/guacadmin/password?token=$GUAC_TOKEN" -X 'PUT' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://127.0.0.1:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"oldPassword":"guacadmin","newPassword":"{{ cw_password }}"}' --compressed --insecure
+        curl "https://{% if duckdns_domain != "" %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443/guacamole/api/session/data/mysql/users/guacadmin/password?token=$GUAC_TOKEN" -X 'PUT' -H 'Connection: keep-alive' -H 'Accept: application/json, text/plain, */*' -H 'Content-Type: application/json;charset=UTF-8' -H 'Origin: http://{% if duckdns_domain != "" %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443' -H 'Sec-Fetch-Site: same-origin' -H 'Sec-Fetch-Mode: cors' -H 'Sec-Fetch-Dest: empty' --data-binary '{"oldPassword":"guacadmin","newPassword":"{{ cw_password }}"}' --compressed --insecure
       when: usersession_one_time_done.stat.exists|bool == False
       no_log: True
 

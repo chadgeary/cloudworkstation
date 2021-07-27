@@ -1,7 +1,7 @@
 # s3 bucket
 resource "aws_s3_bucket" "cw-bucket" {
-  bucket                  = "${var.name_prefix}-bucket-${random_string.cw-random.result}"
-  acl                     = "private"
+  bucket = "${var.name_prefix}-bucket-${random_string.cw-random.result}"
+  acl    = "private"
   versioning {
     enabled = true
   }
@@ -13,8 +13,8 @@ resource "aws_s3_bucket" "cw-bucket" {
       }
     }
   }
-  force_destroy           = true
-  policy                  = <<POLICY
+  force_destroy = true
+  policy        = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -85,9 +85,9 @@ resource "aws_s3_bucket_public_access_block" "cw-bucket-pubaccessblock" {
 
 # s3 objects (playbook)
 resource "aws_s3_bucket_object" "cw-workstation-files" {
-  for_each                = fileset("../playbooks/", "*")
-  bucket                  = aws_s3_bucket.cw-bucket.id
-  key                     = "playbook/${each.value}"
-  content_base64          = base64encode(file("${path.module}/../playbooks/${each.value}"))
-  kms_key_id              = aws_kms_key.cw-kmscmk-s3.arn
+  for_each       = fileset("../playbooks/", "**")
+  bucket         = aws_s3_bucket.cw-bucket.id
+  key            = "playbook/${each.value}"
+  content_base64 = base64encode(file("${path.module}/../playbooks/${each.value}"))
+  kms_key_id     = aws_kms_key.cw-kmscmk-s3.arn
 }

@@ -145,6 +145,8 @@ Edit the vars file (cw.tfvars) to customize the deployment, especially:
 
 # aws_region
 # region to build the services in
+
+# And as of July 2021, please use duckdns.org to generate a domain and token and set the appropriate variabels in aws.tfvars
 ```
 
 # Post-Deployment
