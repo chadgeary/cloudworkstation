@@ -62,6 +62,11 @@ variable "instance_vol_size" {
   description = "The volume size of the instances' root block device"
 }
 
+variable "instance_vol_type" {
+  type        = string
+  description = "The type of volume standard, gp2, gp3, io1, io2, sc1, or st1"
+}
+
 variable "kms_manager" {
   type        = string
   description = "An IAM user for management of KMS key"

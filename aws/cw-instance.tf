@@ -27,7 +27,7 @@ hostnamectl set-hostname ${var.name_prefix}-workstation-1-${random_string.cw-ran
 EOF
   root_block_device {
     volume_size = var.instance_vol_size
-    volume_type = "standard"
+    volume_type = var.instance_vol_type
     encrypted   = "true"
     kms_key_id  = aws_kms_key.cw-kmscmk-ec2.arn
   }

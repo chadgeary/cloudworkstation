@@ -27,8 +27,9 @@ name_prefix = "cw"
 # size according to workload, must be amd64 (not arm)
 instance_type = "t3.medium"
 
-# the root block size of the instance(s) (in GiB)
+# the root block size of the instance(s) (in GiB) and storage type: standard, gp2, gp3, io1, io2, sc1, or st1
 instance_vol_size = 20
+instance_vol_type = "gp3"
 
 # the vendor supplying the AMI and the AMI name - default is official Ubuntu 20.04, must be amd64 (not arm)
 # To get the latest in your region, run the command below (replace the region)
