@@ -5,3 +5,6 @@ A browser-based linux desktop workstation in AWS. Built with Apache Guacamole, d
 
 # Instructions
 See the sub-directory of each cloud provider for specific instructions, including Windows users.
+
+# TODO
+Fix the password management at the end of the playbook
