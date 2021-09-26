@@ -380,10 +380,10 @@
 
     - name: Get Auth Token from Guacamole with Default Credentials (One Time)
       uri:
-        url: https://{% if duckdns_domain != "" %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443/guacamole/api/tokens
+        url: "https://{% if duckdns_domain != '' %}{{ duckdns_domain }}{% else %}127.0.0.1{% endif %}:443/guacamole/api/tokens"
         method: POST
         body: "username=guacadmin&password=guacadmin"
-        validate_certs: {% if duckdns_domain == "" %}no{% endif %}
+        validate_certs: "{% if duckdns_domain == '' %}no{% else %}yes{% endif %}"
       register: GUAC_AUTH_RESPONSE
       retries: 60
       delay: 1
@@ -397,7 +397,7 @@
         method: POST
         body_format: json
         body: '{"parentIdentifier":"ROOT","name":"cloud_workstation","protocol":"rdp","parameters":{"port":"3389","read-only":"","swap-red-blue":"","cursor":"","color-depth":"","clipboard-encoding":"","disable-copy":"","disable-paste":"","dest-port":"","recording-exclude-output":"","recording-exclude-mouse":"","recording-include-keys":"","create-recording-path":"","enable-sftp":"","sftp-port":"","sftp-server-alive-interval":"","sftp-disable-download":"","sftp-disable-upload":"","enable-audio":"","wol-send-packet":"","wol-wait-time":"","security":"","disable-auth":"","ignore-cert":"true","gateway-port":"","server-layout":"","timezone":null,"console":"","width":"","height":"","dpi":"","resize-method":"","console-audio":"","disable-audio":"","enable-audio-input":"","enable-printing":"","enable-drive":"","disable-download":"","disable-upload":"","create-drive-path":"","enable-wallpaper":"","enable-theming":"","enable-font-smoothing":"","enable-full-window-drag":"","enable-desktop-composition":"","enable-menu-animations":"","disable-bitmap-caching":"","disable-offscreen-caching":"","disable-glyph-caching":"","preconnection-id":"","hostname":"172.17.0.1","username":"ubuntu","password":"{{ cw_password }}"},"attributes":{"max-connections":"5","max-connections-per-user":"5","weight":"","failover-only":"","guacd-port":"4822","guacd-encryption":"","guacd-hostname":"{{ guacnet_guacd }}"}}'
-        validate_certs: {% if duckdns_domain == "" %}no{% endif %}
+        validate_certs: "{% if duckdns_domain == '' %}no{% else %}yes{% endif %}"
       register: GUAC_ADD_RDP_RESPONSE
       failed_when: "'url' not in GUAC_ADD_RDP_RESPONSE"
       when: usersession_one_time_done.stat.exists|bool == False
@@ -408,7 +408,7 @@
         method: PUT
         body_format: json
         body: '{"oldPassword":"guacadmin","newPassword":"{{ cw_password }}"}'
-        validate_certs: {% if duckdns_domain == "" %}no{% endif %}
+        validate_certs: "{% if duckdns_domain == '' %}no{% else %}yes{% endif %}"
       register: GUAC_GUACADMIN_CHANGE_PASS
       failed_when: GUAC_GUACADMIN_CHANGE_PASS.status != 204
       when: usersession_one_time_done.stat.exists|bool == False
