@@ -207,7 +207,7 @@
     - name: Docker Container - guacd
       docker_container:
         name: guacd
-        image: guacamole/guacd
+        image: guacamole/guacd:1.4.0
         networks:
           - name: guacnet
             ipv4_address: "{{ guacnet_guacd }}"
@@ -239,7 +239,7 @@
           GUACD_HOSTNAME: "{{ guacnet_guacd }}"
           GUACD_PORT: "4822"
           GUACD_LOG_LEVEL: "debug"
-        image: guacamole/guacamole
+        image: guacamole/guacamole:1.4.0
         links:
           - "guacd:guacd"
           - "guacdb:mysql"
